@@ -65,6 +65,9 @@
     "formik": {
       "lodash": ">=4.17.23",
       "lodash-es": ">=4.17.23"
+    },
+    "release-it": {
+      "undici": ">=6.24.0"
     }
   },
   "dependencies": {
