@@ -43,8 +43,8 @@
     "coverage-map": "map.js"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "3.1011.0",
-    "@aws-sdk/credential-providers": "3.1011.0",
+    "@aws-sdk/client-dynamodb": "3.1012.0",
+    "@aws-sdk/credential-providers": "3.1012.0",
     "@aws-sdk/util-dynamodb": "3.996.2",
     "@boxyhq/error-code-mnemonic": "0.1.1",
     "@boxyhq/metrics": "0.2.12",
@@ -53,7 +53,7 @@
     "axios": "1.13.5",
     "encoding": "0.1.13",
     "ipaddr.js": "2.3.0",
-    "jose": "6.2.1",
+    "jose": "6.2.2",
     "lodash": "4.17.23",
     "mixpanel": "0.20.0",
     "mongodb": "7.1.0",
