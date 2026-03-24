@@ -3,6 +3,9 @@ import _ from 'lodash';
 import { DirectorySyncProviders } from '../../typings';
 import type { DirectoryType, User, UserPatchOperation, GroupPatchOperation } from '../../typings';
 
+// Sentinel symbol to mark attributes for removal in updateRawUserAttributes.
+const REMOVE_SENTINEL = Symbol(`remove_attribute_${crypto.randomUUID()}`);
+
 export const indexNames = {
   directoryIdUsername: 'directoryIdUsername',
   directoryIdDisplayname: 'directoryIdDisplayname',
@@ -77,7 +80,7 @@ export const getDirectorySyncProviders = (): { [K: string]: string } => {
 
 // Parse the PATCH request body and return the user attributes (both standard and custom)
 export const parseUserPatchRequest = (operation: UserPatchOperation) => {
-  const { value, path } = operation;
+  const { op, value, path } = operation;
 
   const attributes: Partial<User> = {};
   const rawAttributes = {};
@@ -88,6 +91,16 @@ export const parseUserPatchRequest = (operation: UserPatchOperation) => {
     'name.familyName': 'last_name',
     'emails[type eq "work"].value': 'email',
   };
+
+  // Handle "remove" operations: mark attributes for deletion
+  if (op === 'remove' && path) {
+    rawAttributes[path] = REMOVE_SENTINEL;
+
+    return {
+      attributes,
+      rawAttributes,
+    };
+  }
 
   // If there is a path, then the value is the value
   // For example { path: "active", value: true }
@@ -184,9 +197,51 @@ export const updateRawUserAttributes = (raw, attributes) => {
   }
 
   for (const key of keys) {
-    if (!applySCIMFilterUpdate(raw, key, attributes[key])) {
-      _.set(raw, key, attributes[key]);
+    const value = attributes[key];
+
+    // Handle remove operations (value is the sentinel from parseUserPatchRequest)
+    if (value === REMOVE_SENTINEL) {
+      if (key.startsWith('urn:')) {
+        // If the full key is a top-level property, delete it directly.
+        // e.g. "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User"
+        if (key in raw) {
+          delete raw[key];
+        } else {
+          // Path format: "urn:...:User:attribute" — remove the attribute from the schema object.
+          const i = key.lastIndexOf(':');
+          const urn = key.substring(0, i);
+          if (raw[urn] && typeof raw[urn] === 'object') {
+            delete raw[urn][key.substring(i + 1)];
+          }
+        }
+      } else {
+        _.unset(raw, key);
+      }
+      continue;
     }
+
+    if (applySCIMFilterUpdate(raw, key, value)) {
+      continue;
+    }
+
+    // URN keys (e.g. "urn:...:enterprise:2.0:User") contain dots that lodash
+    // _.set would interpret as nested path separators, mangling the key.
+    // Use direct property access instead.
+    if (key.startsWith('urn:')) {
+      if (typeof value === 'object' && value !== null) {
+        // No-path format: key is the schema URN, value is an attribute object.
+        raw[key] = { ...(raw[key] || {}), ...value };
+      } else {
+        // Path format: "schemaUrn:attribute" — split at last colon.
+        const i = key.lastIndexOf(':');
+        const urn = key.substring(0, i);
+        raw[urn] = raw[urn] && typeof raw[urn] === 'object' ? raw[urn] : {};
+        raw[urn][key.substring(i + 1)] = value;
+      }
+      continue;
+    }
+
+    _.set(raw, key, value);
   }
 
   return raw;
