@@ -318,7 +318,7 @@ export class DirectoryConfig {
    *           application/json:
    *             schema:
    *               $ref: "#/components/schemas/Directory"
-   *     x-ory-ratelimit-bucket: polis-public-low
+   *     x-ory-ratelimit-bucket: polis-public-high
    */
   public async get(id: string): Promise<Response<Directory>> {
     metrics.increment('getDsyncConnections');
@@ -476,7 +476,7 @@ export class DirectoryConfig {
    *               type: array
    *               items:
    *                 $ref: "#/components/schemas/Directory"
-   *     x-ory-ratelimit-bucket: polis-public-low
+   *     x-ory-ratelimit-bucket: polis-public-high
    */
   public async getByTenantAndProduct(tenant: string, product: string): Promise<Response<Directory[]>> {
     metrics.increment('getDsyncConnections');
@@ -633,7 +633,7 @@ export class DirectoryConfig {
    *                  pageToken:
    *                    type: string
    *                    description: token for pagination
-   *     x-ory-ratelimit-bucket: polis-public-low
+   *     x-ory-ratelimit-bucket: polis-public-high
    */
   public async filterBy(
     params: FilterByParams = {}

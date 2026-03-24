@@ -1493,7 +1493,7 @@ export class OAuthController implements IOAuthController {
    *                 lastName: Jackson
    *                 raw: {}
    *                 requested: {}
-   *     x-ory-ratelimit-bucket: polis-public-low
+   *     x-ory-ratelimit-bucket: polis-public-high
    */
   public async userInfo(token: string): Promise<Profile> {
     const tokens = token.split('.');
