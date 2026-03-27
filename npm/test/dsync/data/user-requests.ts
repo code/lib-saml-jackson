@@ -259,6 +259,30 @@ const requests = {
     };
   },
 
+  // Remove standard mapped attributes using op: "remove" (name.givenName, name.familyName)
+  removeStandardMappedAttributes: (directory: Directory, userId: string): DirectorySyncRequest => {
+    return {
+      method: 'PATCH',
+      body: {
+        Operations: [
+          {
+            op: 'remove',
+            path: 'name.givenName',
+          },
+          {
+            op: 'remove',
+            path: 'name.familyName',
+          },
+        ],
+      },
+      directoryId: directory.id,
+      resourceType: 'users',
+      resourceId: userId,
+      apiSecret: directory.scim.secret,
+      query: {},
+    };
+  },
+
   // Remove standard attribute using op: "remove" with no value
   removeTitle: (directory: Directory, userId: string): DirectorySyncRequest => {
     return {
@@ -425,6 +449,53 @@ const requests = {
     return {
       method: 'PUT',
       body: user,
+      directoryId: directory.id,
+      resourceType: 'users',
+      resourceId: userId,
+      apiSecret: directory.scim.secret,
+      query: {},
+    };
+  },
+
+  // Entra: set extension multi-valued attribute via URN path
+  entraSetExtensionMultiValued: (directory: Directory, userId: string): DirectorySyncRequest => {
+    return {
+      method: 'PATCH',
+      body: {
+        Operations: [
+          {
+            op: 'replace',
+            value: {
+              'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User': {
+                roles: [
+                  { value: 'admin-role-id', display: 'Admin' },
+                  { value: 'user-role-id', display: 'User' },
+                ],
+              },
+            },
+          },
+        ],
+      },
+      directoryId: directory.id,
+      resourceType: 'users',
+      resourceId: userId,
+      apiSecret: directory.scim.secret,
+      query: {},
+    };
+  },
+
+  // Entra: remove a specific value from extension multi-valued attribute via URN + filter path
+  entraRemoveExtensionFilterPath: (directory: Directory, userId: string): DirectorySyncRequest => {
+    return {
+      method: 'PATCH',
+      body: {
+        Operations: [
+          {
+            op: 'remove',
+            path: 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:roles[value eq "admin-role-id"]',
+          },
+        ],
+      },
       directoryId: directory.id,
       resourceType: 'users',
       resourceId: userId,

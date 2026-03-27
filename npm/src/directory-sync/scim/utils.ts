@@ -96,6 +96,11 @@ export const parseUserPatchRequest = (operation: UserPatchOperation) => {
   if (op === 'remove' && path) {
     rawAttributes[path] = REMOVE_SENTINEL;
 
+    // Propagate removal to standard user model attributes
+    if (path in attributesMap) {
+      attributes[attributesMap[path]] = '';
+    }
+
     return {
       attributes,
       rawAttributes,
@@ -156,11 +161,17 @@ export const extractStandardUserAttributes = (body: any) => {
   return userAttributes;
 };
 
+// Match SCIM filter paths with a sub-attribute: `phoneNumbers[type eq "work"].value`
+const SCIM_FILTER_SUB_ATTR_RE = /^(\w+)\[(\w+)\s+eq\s+"([^"]+)"\]\.(\w+)$/;
+
+// Match SCIM filter paths without a sub-attribute: `phoneNumbers[type eq "work"]`
+const SCIM_FILTER_RE = /^(\w+)\[(\w+)\s+eq\s+"([^"]+)"\]$/;
+
 // Resolve a SCIM filter path like `phoneNumbers[type eq "work"].value` to a
 // lodash-compatible path like `["phoneNumbers", 0, "value"]`. Returns false for
 // non-filter paths so the caller can fall back to plain _.set.
 const applySCIMFilterUpdate = (raw: any, path: string, value: any): boolean => {
-  const match = path.match(/^(\w+)\[(\w+)\s+eq\s+"([^"]+)"\]\.(\w+)$/);
+  const match = path.match(SCIM_FILTER_SUB_ATTR_RE);
   if (!match) {
     return false;
   }
@@ -188,6 +199,49 @@ const applySCIMFilterUpdate = (raw: any, path: string, value: any): boolean => {
   return true;
 };
 
+// Remove matching entries from a multi-valued attribute using a SCIM filter path.
+// Handles two forms:
+//   - `attr[filter]`         → remove entire matching array entries
+//   - `attr[filter].subAttr` → unset only the sub-attribute from matching entries
+// Returns false for non-filter paths so the caller can fall back to _.unset.
+const removeSCIMFilterPath = (raw: any, path: string): boolean => {
+  // Try sub-attribute form first: phoneNumbers[type eq "work"].value
+  const subMatch = path.match(SCIM_FILTER_SUB_ATTR_RE);
+  if (subMatch) {
+    const [, attribute, filterAttr, filterValue, subAttribute] = subMatch;
+    const arr = _.get(raw, attribute);
+    if (!Array.isArray(arr)) {
+      return true; // Nothing to remove — already absent
+    }
+
+    for (const el of arr) {
+      if (el[filterAttr] === filterValue) {
+        delete el[subAttribute];
+      }
+    }
+    return true;
+  }
+
+  // Try whole-entry form: phoneNumbers[type eq "work"]
+  const match = path.match(SCIM_FILTER_RE);
+  if (match) {
+    const [, attribute, filterAttr, filterValue] = match;
+    const arr = _.get(raw, attribute);
+    if (!Array.isArray(arr)) {
+      return true; // Nothing to remove — already absent
+    }
+
+    _.set(
+      raw,
+      attribute,
+      arr.filter((el: any) => el[filterAttr] !== filterValue)
+    );
+    return true;
+  }
+
+  return false;
+};
+
 // Update raw user attributes
 export const updateRawUserAttributes = (raw, attributes) => {
   const keys = Object.keys(attributes);
@@ -210,11 +264,16 @@ export const updateRawUserAttributes = (raw, attributes) => {
           // Path format: "urn:...:User:attribute" — remove the attribute from the schema object.
           const i = key.lastIndexOf(':');
           const urn = key.substring(0, i);
+          const attrName = key.substring(i + 1);
           if (raw[urn] && typeof raw[urn] === 'object') {
-            delete raw[urn][key.substring(i + 1)];
+            // If the attribute contains a SCIM filter (e.g. "roles[value eq ...]"),
+            // delegate to removeSCIMFilterPath scoped to the schema sub-object.
+            if (!removeSCIMFilterPath(raw[urn], attrName)) {
+              delete raw[urn][attrName];
+            }
           }
         }
-      } else {
+      } else if (!removeSCIMFilterPath(raw, key)) {
         _.unset(raw, key);
       }
       continue;

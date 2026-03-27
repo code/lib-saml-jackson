@@ -186,6 +186,29 @@ tap.test('Directory users /', async (t) => {
       t.notOk(data.title, 'title should be removed');
     });
 
+    t.test('Should propagate remove op for standard mapped attributes to user model', async (t) => {
+      // Verify user has name fields from initial creation
+      const { data: initialUser } = await directorySync.requests.handle(
+        requests.getById(directory, createdUser.id)
+      );
+      t.equal(initialUser.name.givenName, 'Jackson', 'user should have givenName initially');
+      t.equal(initialUser.name.familyName, 'M', 'user should have familyName initially');
+
+      // Remove name.givenName and name.familyName using op: "remove"
+      const { status, data } = await directorySync.requests.handle(
+        requests.removeStandardMappedAttributes(directory, createdUser.id)
+      );
+
+      t.equal(status, 200);
+      t.notOk(data.name?.givenName, 'givenName should be removed from raw');
+      t.notOk(data.name?.familyName, 'familyName should be removed from raw');
+
+      // Verify the user model fields are cleared via the internal user record
+      const user = await directorySync.users.get(createdUser.id);
+      t.equal(user.data?.first_name, '', 'first_name should be cleared on user model');
+      t.equal(user.data?.last_name, '', 'last_name should be cleared on user model');
+    });
+
     t.test('Entra: should set and clear extension attributes via no-path object format', async (t) => {
       // Set extension attributes (Entra no-path format with nested schema object)
       const { status: setStatus, data: setData } = await directorySync.requests.handle(
@@ -375,6 +398,39 @@ tap.test('Directory users /', async (t) => {
       t.equal(workAddress.postalCode, '94105');
       t.equal(workAddress.country, 'US');
     });
+
+    t.test(
+      'Entra: should remove specific value from extension multi-valued attribute via URN filter path',
+      async (t) => {
+        const extKey = 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User';
+
+        // First, set a multi-valued extension attribute with two roles
+        const { status: setStatus, data: setData } = await directorySync.requests.handle(
+          requests.entraSetExtensionMultiValued(directory, createdUser.id)
+        );
+
+        t.equal(setStatus, 200);
+        t.ok(setData[extKey], 'extension schema key should exist');
+        t.equal(setData[extKey].roles.length, 2, 'should have two roles');
+
+        // Remove only the admin role using URN + filter path
+        const { status, data } = await directorySync.requests.handle(
+          requests.entraRemoveExtensionFilterPath(directory, createdUser.id)
+        );
+
+        t.equal(status, 200);
+        t.ok(data[extKey], 'extension schema key should still exist');
+        t.equal(data[extKey].roles.length, 1, 'should have one role remaining');
+        t.equal(data[extKey].roles[0].value, 'user-role-id', 'only the user role should remain');
+
+        // Verify removal persists
+        const { data: fetched } = await directorySync.requests.handle(
+          requests.getById(directory, createdUser.id)
+        );
+        t.equal(fetched[extKey].roles.length, 1, 'removal should persist after re-fetch');
+        t.equal(fetched[extKey].roles[0].value, 'user-role-id', 'correct role should persist');
+      }
+    );
 
     t.test('Should handle SCIM filter paths for arbitrary attribute names', async (t) => {
       const { status, data } = await directorySync.requests.handle(
