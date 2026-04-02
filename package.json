@@ -110,7 +110,7 @@
     "swr": "2.4.1"
   },
   "devDependencies": {
-    "@playwright/test": "1.59.0",
+    "@playwright/test": "1.59.1",
     "@types/cors": "2.8.19",
     "@types/micromatch": "4.0.10",
     "@types/node": "24.12.0",
