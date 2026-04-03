@@ -170,7 +170,7 @@ const Login = ({
                           />
                         </label>
                         <ButtonOutline
-                          loading={loading && authMethod === 'credentials'}
+                          loading={loading && authMethod === 'credentials' ? 'true' : 'false'}
                           className='btn-block'
                           type='submit'>
                           {t('sign_in')}
@@ -206,7 +206,7 @@ const Login = ({
             <div className='mt-10 flex flex-col gap-3'>
               {isMagicLinkEnabled && (
                 <ButtonOutline
-                  loading={loading && authMethod === 'email'}
+                  loading={loading && authMethod === 'email' ? 'true' : 'false'}
                   className='btn-block'
                   onClick={onMagicLinkLogin}
                   type='button'>
