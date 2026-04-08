@@ -191,7 +191,7 @@ const Login = ({
                   components={{
                     docLink: (
                       <a
-                        href='https://www.ory.sh/docs/polis/admin-portal'
+                        href='https://www.ory.com/docs/polis/admin-portal'
                         target='_blank'
                         rel='noopener noreferrer'
                         className='underline underline-offset-2'>
