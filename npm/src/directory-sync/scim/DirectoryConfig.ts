@@ -404,6 +404,11 @@ export class DirectoryConfig {
       }
 
       const directory: Directory = await this.store().get(id);
+
+      if (!directory) {
+        throw new JacksonError('Directory configuration not found.', 404);
+      }
+
       const toUpdate = {
         ...directory,
       };
