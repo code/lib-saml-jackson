@@ -76,7 +76,7 @@
     "@boxyhq/react-ui": "3.5.3",
     "@boxyhq/saml-jackson": "file:npm",
     "@heroicons/react": "2.2.0",
-    "@next/bundle-analyzer": "16.2.2",
+    "@next/bundle-analyzer": "16.2.3",
     "@tailwindcss/typography": "0.5.19",
     "axios": "1.15.0",
     "chroma-js": "3.2.0",
