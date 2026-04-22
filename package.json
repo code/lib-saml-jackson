@@ -68,6 +68,9 @@
     },
     "release-it": {
       "undici": ">=6.24.0"
+    },
+    "next-auth": {
+      "nodemailer": ">=8.0.5"
     }
   },
   "dependencies": {
@@ -92,7 +95,7 @@
     "next-auth": "4.24.13",
     "next-i18next": "15.4.3",
     "next-mdx-remote": "6.0.0",
-    "nodemailer": "7.0.11",
+    "nodemailer": "8.0.5",
     "openid-client": "6.8.2",
     "picomatch": "^4.0.4",
     "pino": "10.3.1",
