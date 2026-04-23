@@ -11,7 +11,6 @@ import type {
   IConnectionAPIController,
   IOAuthController,
   IdentityFederationApp,
-  OIDCSSORecord,
   JacksonOption,
   Profile,
 } from '../../src';
