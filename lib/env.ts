@@ -15,7 +15,7 @@ const googleDSyncCallbackPath = '/api/scim/oauth/callback';
 const hostUrl = process.env.HOST_URL || 'localhost';
 const hostPort = Number(process.env.PORT || '5225');
 const externalUrl = process.env.EXTERNAL_URL || 'http://' + hostUrl + ':' + hostPort;
-const apiKeys = (process.env.JACKSON_API_KEYS || '').split(',');
+const apiKeys = (process.env.API_KEYS || process.env.JACKSON_API_KEYS || '').split(',');
 const acsUrl = process.env.ACS_URL || externalUrl + samlPath;
 
 let ssl;
